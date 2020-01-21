@@ -568,6 +568,8 @@ class CRM_Member_Form_MembershipRenewal extends CRM_Member_Form {
             'total_amount' => $this->_params['total_amount'],
             'contact_id' => $this->_contributorContactID,
             'contribution_recur_id' => $contributionRecurID,
+            'contribution_status_id' => CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending'),
+            'is_pay_later' => FALSE,
             'skipCleanMoney' => TRUE,
           );
           $contribution = CRM_Contribute_BAO_Contribution::create($tempContributionParams);
@@ -600,7 +602,7 @@ class CRM_Member_Form_MembershipRenewal extends CRM_Member_Form {
 
     //if contribution status is pending then set pay later
     $this->_params['is_pay_later'] = FALSE;
-    if ($this->_params['contribution_status_id'] == array_search('Pending', CRM_Contribute_PseudoConstant::contributionStatus())) {
+    if ($this->_params['contribution_status_id'] == array_search('Pending', CRM_Contribute_PseudoConstant::contributionStatus()) && empty($this->_params['contribution_id']) {
       $this->_params['is_pay_later'] = 1;
     }
 
