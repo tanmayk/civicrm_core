@@ -44,21 +44,29 @@ class CRM_Pledge_Form_Search extends CRM_Core_Form_Search {
   protected $_queryParams;
 
   /**
+   * @return string
+   */
+  public function getDefaultEntity() {
+    return 'Pledge';
+  }
+
+  /**
    * Are we restricting ourselves to a single contact.
    *
-   * @var boolean
+   * @var bool
    */
   protected $_single = FALSE;
 
   /**
    * Are we restricting ourselves to a single contact.
    *
-   * @var boolean
+   * @var bool
    */
   protected $_limit = NULL;
 
   /**
    * Prefix for the controller.
+   * @var string
    */
   protected $_prefix = "pledge_";
 
@@ -71,7 +79,6 @@ class CRM_Pledge_Form_Search extends CRM_Core_Form_Search {
     $this->_actionButtonName = $this->getButtonName('next', 'action');
 
     $this->_done = FALSE;
-    $this->defaults = array();
 
     $this->loadStandardSearchOptionsFromUrl();
 
@@ -91,6 +98,10 @@ class CRM_Pledge_Form_Search extends CRM_Core_Form_Search {
     }
 
     if ($this->_force) {
+      // pledge related dates
+      $this->addSearchFieldMetadata(['Pledge' => CRM_Pledge_BAO_Query::getSearchFieldMetadata()]);
+      $this->addSearchFieldMetadata(['PledgePayment' => CRM_Pledge_BAO_Query::getPledgePaymentSearchFieldMetadata()]);
+      $this->addFormFieldsFromMetadata();
       $this->postProcess();
       $this->set('force', 0);
     }
@@ -223,7 +234,7 @@ class CRM_Pledge_Form_Search extends CRM_Core_Form_Search {
 
     $this->_done = TRUE;
 
-    $this->_formValues = $this->controller->exportValues($this->_name);
+    $this->setFormValues();
 
     $this->fixFormValues();
 
@@ -232,7 +243,7 @@ class CRM_Pledge_Form_Search extends CRM_Core_Form_Search {
       $this->_formValues["pledge_test"] = 0;
     }
 
-    foreach (array('pledge_amount_low', 'pledge_amount_high') as $f) {
+    foreach (['pledge_amount_low', 'pledge_amount_high'] as $f) {
       if (isset($this->_formValues[$f])) {
         $this->_formValues[$f] = CRM_Utils_Rule::cleanMoney($this->_formValues[$f]);
       }
@@ -311,38 +322,7 @@ class CRM_Pledge_Form_Search extends CRM_Core_Form_Search {
    * @see valid_date
    */
   public function addRules() {
-    $this->addFormRule(array('CRM_Pledge_Form_Search', 'formRule'));
-  }
-
-  /**
-   * Global validation rules for the form.
-   *
-   * @param array $fields
-   *   Posted values of the form.
-   *
-   * @return array|bool
-   */
-  public static function formRule($fields) {
-    $errors = array();
-
-    if (!empty($errors)) {
-      return $errors;
-    }
-
-    return TRUE;
-  }
-
-  /**
-   * Set the default form values.
-   *
-   *
-   * @return array
-   *   the default array reference
-   */
-  public function setDefaultValues() {
-    $defaults = array();
-    $defaults = $this->_formValues;
-    return $defaults;
+    $this->addFormRule(['CRM_Pledge_Form_Search', 'formRule']);
   }
 
   public function fixFormValues() {
@@ -353,8 +333,8 @@ class CRM_Pledge_Form_Search extends CRM_Core_Form_Search {
     // set pledge payment related fields
     $status = CRM_Utils_Request::retrieve('status', 'String');
     if ($status) {
-      $this->_formValues['pledge_payment_status_id'] = array($status => 1);
-      $this->_defaults['pledge_payment_status_id'] = array($status => 1);
+      $this->_formValues['pledge_payment_status_id'] = [$status => 1];
+      $this->_defaults['pledge_payment_status_id'] = [$status => 1];
     }
 
     $fromDate = CRM_Utils_Request::retrieve('start', 'Date');
@@ -380,7 +360,7 @@ class CRM_Pledge_Form_Search extends CRM_Core_Form_Search {
       // we need set all statuses except Cancelled
       unset($statusValues[$pledgeStatus]);
 
-      $statuses = array();
+      $statuses = [];
       foreach ($statusValues as $statusId => $value) {
         $statuses[$statusId] = 1;
       }
@@ -414,13 +394,6 @@ class CRM_Pledge_Form_Search extends CRM_Core_Form_Search {
         $this->_single = TRUE;
       }
     }
-  }
-
-  /**
-   * @return null
-   */
-  public function getFormValues() {
-    return NULL;
   }
 
   /**

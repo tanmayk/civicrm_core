@@ -36,12 +36,12 @@
  */
 class CRM_Admin_Form_Setting_Mapping extends CRM_Admin_Form_Setting {
 
-  protected $_settings = array(
+  protected $_settings = [
     'mapAPIKey' => CRM_Core_BAO_Setting::MAP_PREFERENCES_NAME,
     'mapProvider' => CRM_Core_BAO_Setting::MAP_PREFERENCES_NAME,
     'geoAPIKey' => CRM_Core_BAO_Setting::MAP_PREFERENCES_NAME,
     'geoProvider' => CRM_Core_BAO_Setting::MAP_PREFERENCES_NAME,
-  );
+  ];
 
   /**
    * Build the form object.
@@ -61,14 +61,10 @@ class CRM_Admin_Form_Setting_Mapping extends CRM_Admin_Form_Setting {
    *   true if no errors, else array of errors
    */
   public static function formRule($fields) {
-    $errors = array();
+    $errors = [];
 
     if (!CRM_Utils_System::checkPHPVersion(5, FALSE)) {
       $errors['_qf_default'] = ts('Mapping features require PHP version 5 or greater');
-    }
-
-    if (!$fields['mapAPIKey'] && ($fields['mapProvider'] != '' && $fields['mapProvider'] == 'Yahoo')) {
-      $errors['mapAPIKey'] = "Map Provider key is a required field.";
     }
 
     if ($fields['mapProvider'] == 'OpenStreetMaps' && $fields['geoProvider'] == '') {
@@ -84,7 +80,7 @@ class CRM_Admin_Form_Setting_Mapping extends CRM_Admin_Form_Setting {
    * All local rules are added near the element
    */
   public function addRules() {
-    $this->addFormRule(array('CRM_Admin_Form_Setting_Mapping', 'formRule'));
+    $this->addFormRule(['CRM_Admin_Form_Setting_Mapping', 'formRule']);
   }
 
 }

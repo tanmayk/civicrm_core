@@ -54,8 +54,9 @@ class CRM_Core_Block {
 
   /**
    * Template file names for the above blocks.
+   * @var array
    */
-  static $_properties = NULL;
+  public static $_properties = NULL;
 
   /**
    * Class constructor.
@@ -527,19 +528,6 @@ class CRM_Core_Block {
       $values[] = $value;
     }
     self::setProperty(self::MAIL, 'templateValues', array('shortCuts' => $values));
-  }
-
-  /**
-   * Create the list of shortcuts for the application and format is as a block.
-   */
-  private static function setTemplateMenuValues() {
-    $config = CRM_Core_Config::singleton();
-
-    $path = 'navigation';
-    $values = CRM_Core_Menu::getNavigation();
-    if ($values) {
-      self::setProperty(self::MENU, 'templateValues', array('menu' => $values));
-    }
   }
 
   /**

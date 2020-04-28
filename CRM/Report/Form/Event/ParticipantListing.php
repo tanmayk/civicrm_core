@@ -30,7 +30,7 @@
  * @package CRM
  * @copyright CiviCRM LLC (c) 2004-2019
  */
-class CRM_Report_Form_Event_ParticipantListing extends CRM_Report_Form_Event {
+class CRM_Report_Form_Event_ParticipantListing extends CRM_Report_Form {
 
   protected $_summary = NULL;
 
@@ -66,7 +66,8 @@ class CRM_Report_Form_Event_ParticipantListing extends CRM_Report_Form_Event {
             'required' => TRUE,
             'no_repeat' => TRUE,
             'dbAlias' => 'contact_civireport.sort_name',
-          )),
+          ),
+        ),
           $this->getBasicContactFields(),
           array(
             'age_at_event' => array(
@@ -155,6 +156,10 @@ class CRM_Report_Form_Event_ParticipantListing extends CRM_Report_Form_Event {
           'registered_by_id' => array(
             'title' => ts('Registered by Participant ID'),
           ),
+          'registered_by_name' => array(
+            'title' => ts('Registered by Participant Name'),
+            'name' => 'registered_by_id',
+          ),
           'source' => array(
             'title' => ts('Source'),
           ),
@@ -180,7 +185,7 @@ class CRM_Report_Form_Event_ParticipantListing extends CRM_Report_Form_Event {
             'operatorType' => CRM_Report_Form::OP_ENTITYREF,
             'type' => CRM_Utils_Type::T_INT,
             'attributes' => array(
-              'entity' => 'event',
+              'entity' => 'Event',
               'select' => array('minimumInputLength' => 0),
             ),
           ),
@@ -348,7 +353,7 @@ class CRM_Report_Form_Event_ParticipantListing extends CRM_Report_Form_Event {
           'contribution_status_id' => array(
             'title' => ts('Contribution Status'),
             'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-            'options' => CRM_Contribute_PseudoConstant::contributionStatus(),
+            'options' => CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'label'),
             'default' => NULL,
           ),
         ),
@@ -645,9 +650,8 @@ ORDER BY  cv.label
   public function alterDisplay(&$rows) {
     $entryFound = FALSE;
     $eventType = CRM_Core_OptionGroup::values('event_type');
-
     $financialTypes = CRM_Contribute_PseudoConstant::financialType();
-    $contributionStatus = CRM_Contribute_PseudoConstant::contributionStatus();
+    $contributionStatus = CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'label');
     $paymentInstruments = CRM_Contribute_PseudoConstant::paymentInstrument();
 
     foreach ($rows as $rowNum => $row) {
@@ -694,7 +698,18 @@ ORDER BY  cv.label
         $entryFound = TRUE;
       }
 
-      // Handel value seperator in Fee Level
+      // Handle registered by name
+      if (array_key_exists('civicrm_participant_registered_by_name', $row)) {
+        $registeredById = $row['civicrm_participant_registered_by_name'];
+        if ($registeredById) {
+          $registeredByContactId = CRM_Core_DAO::getFieldValue("CRM_Event_DAO_Participant", $registeredById, 'contact_id', 'id');
+          $rows[$rowNum]['civicrm_participant_registered_by_name'] = CRM_Contact_BAO_Contact::displayName($registeredByContactId);
+          $rows[$rowNum]['civicrm_participant_registered_by_name_link'] = CRM_Utils_System::url('civicrm/contact/view', 'reset=1&cid=' . $registeredByContactId, $this->_absoluteUrl);
+          $rows[$rowNum]['civicrm_participant_registered_by_name_hover'] = ts('View Contact Summary for Contact that registered the participant.');
+        }
+      }
+
+      // Handle value seperator in Fee Level
       if (array_key_exists('civicrm_participant_participant_fee_level', $row)) {
         $feeLevel = $row['civicrm_participant_participant_fee_level'];
         if ($feeLevel) {
@@ -732,19 +747,6 @@ ORDER BY  cv.label
         $entryFound = TRUE;
       }
 
-      // Handle employer id
-      if (array_key_exists('civicrm_contact_employer_id', $row)) {
-        $employerId = $row['civicrm_contact_employer_id'];
-        if ($employerId) {
-          $rows[$rowNum]['civicrm_contact_employer_id'] = CRM_Contact_BAO_Contact::displayName($employerId);
-          $url = CRM_Utils_System::url('civicrm/contact/view',
-            'reset=1&cid=' . $employerId, $this->_absoluteUrl
-          );
-          $rows[$rowNum]['civicrm_contact_employer_id_link'] = $url;
-          $rows[$rowNum]['civicrm_contact_employer_id_hover'] = ts('View Contact Summary for this Contact.');
-        }
-      }
-
       // Convert campaign_id to campaign title
       $this->_initBasicRow($rows, $entryFound, $row, 'civicrm_participant_campaign_id', $rowNum, $this->campaigns);
 
@@ -759,14 +761,6 @@ ORDER BY  cv.label
 
       $entryFound = $this->alterDisplayContactFields($row, $rows, $rowNum, 'event/participantListing', 'View Event Income Details') ? TRUE : $entryFound;
 
-      // display birthday in the configured custom format
-      if (array_key_exists('civicrm_contact_birth_date', $row)) {
-        $birthDate = $row['civicrm_contact_birth_date'];
-        if ($birthDate) {
-          $rows[$rowNum]['civicrm_contact_birth_date'] = CRM_Utils_Date::customFormat($birthDate, '%Y%m%d');
-        }
-        $entryFound = TRUE;
-      }
       $entryFound = $this->alterDisplayAddressFields($row, $rows, $rowNum, 'event/ParticipantListing', 'List all participant(s) for this ') ? TRUE : $entryFound;
 
       // skip looking further in rows, if first row itself doesn't
